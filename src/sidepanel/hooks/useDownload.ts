@@ -7,30 +7,28 @@ import { saveFile } from '../../lib/file-saver.ts';
 
 type DownloadState =
   | { status: 'idle' }
-  | { status: 'downloading'; downloaded: number; total: number }
-  | { status: 'done' }
-  | { status: 'error'; message: string };
+  | { status: 'downloading'; url: string; downloaded: number; total: number }
+  | { status: 'done'; url: string }
+  | { status: 'error'; url: string; message: string };
 
-/** Fetch a playlist URL and return its text content. */
 async function fetchText(url: string, signal: AbortSignal): Promise<string> {
   const res = await fetch(url, { signal });
   if (!res.ok) throw new Error(`Failed to fetch manifest: ${res.status} ${res.statusText}`);
   return res.text();
 }
 
-/**
- * Resolve the base URL for relative segment paths.
- * Strips the filename portion, keeping only the directory.
- */
 function baseOf(url: string): string {
   return url.substring(0, url.lastIndexOf('/') + 1);
 }
 
 /**
- * Given an HLS URL (master or media playlist), return the ordered list
- * of segment URLs to download.
+ * Resolve an HLS URL into an ordered list of segment URLs to fetch,
+ * plus an optional fMP4 init segment URL that must be prepended.
  */
-async function resolveHlsSegments(manifestUrl: string, signal: AbortSignal): Promise<string[]> {
+async function resolveHls(
+  manifestUrl: string,
+  signal: AbortSignal,
+): Promise<{ segmentUrls: string[]; initUrl?: string }> {
   const content = await fetchText(manifestUrl, signal);
   const base = baseOf(manifestUrl);
 
@@ -40,50 +38,66 @@ async function resolveHlsSegments(manifestUrl: string, signal: AbortSignal): Pro
     const best = qualities.reduce((a, b) => (a.bandwidth >= b.bandwidth ? a : b));
     const mediaContent = await fetchText(best.url, signal);
     const mediaBase = baseOf(best.url);
-    const segments = parseMediaPlaylist(mediaContent, mediaBase);
-    return segments.map((s) => s.url);
+    const { segments, initUrl } = parseMediaPlaylist(mediaContent, mediaBase);
+    return { segmentUrls: segments.map((s) => s.url), initUrl };
   }
 
   // Already a media playlist
-  const segments = parseMediaPlaylist(content, base);
-  if (segments.length > 0) return segments.map((s) => s.url);
+  const { segments, initUrl } = parseMediaPlaylist(content, base);
+  if (segments.length > 0) return { segmentUrls: segments.map((s) => s.url), initUrl };
 
   // Not a recognised HLS playlist — treat the URL itself as a single file
-  return [manifestUrl];
+  return { segmentUrls: [manifestUrl] };
 }
 
 export function useDownload() {
   const [state, setState] = useState<DownloadState>({ status: 'idle' });
 
   const download = useCallback(async (video: DetectedVideo) => {
-    setState({ status: 'downloading', downloaded: 0, total: 1 });
+    setState({ status: 'downloading', url: video.url, downloaded: 0, total: 1 });
     const controller = new AbortController();
 
     try {
-      let segmentUrls: string[];
-      let ext = 'mp4';
+      let allUrls: string[];
+      let isFmp4 = false;
 
       if (video.format === 'hls') {
-        segmentUrls = await resolveHlsSegments(video.url, controller.signal);
-        ext = 'ts'; // concatenated MPEG-TS segments — playable by VLC, ffmpeg, etc.
+        const { segmentUrls, initUrl } = await resolveHls(video.url, controller.signal);
+        allUrls = initUrl ? [initUrl, ...segmentUrls] : segmentUrls;
+        isFmp4 = Boolean(initUrl);
       } else {
-        segmentUrls = [video.url];
-        const urlExt = video.url.split('.').pop()?.split('?')[0]?.toLowerCase();
-        if (urlExt && ['mp4', 'webm', 'mov', 'ogg', 'ts'].includes(urlExt)) ext = urlExt;
+        allUrls = [video.url];
       }
 
       const segments = await downloadSegments(
-        segmentUrls,
-        (downloaded, total) => setState({ status: 'downloading', downloaded, total }),
+        allUrls,
+        (downloaded, total) => setState({ status: 'downloading', url: video.url, downloaded, total }),
         controller.signal,
       );
 
       const data = concatSegments(segments);
+
+      // fMP4 init + segments → valid fragmented MP4
+      // MPEG-TS segments → .ts (widely supported by media players)
+      // Direct file → use original extension
+      let ext: string;
+      if (video.format === 'hls') {
+        ext = isFmp4 ? 'mp4' : 'ts';
+      } else {
+        ext = video.url.split('.').pop()?.split('?')[0]?.toLowerCase() ?? 'mp4';
+        if (!['mp4', 'webm', 'mov', 'ogg', 'ts'].includes(ext)) ext = 'mp4';
+      }
+
+      const mime = ext === 'ts' ? 'video/mp2t' : 'video/mp4';
       const baseName = video.label.replace(/\.[^.]+$/, '').replace(/[^a-z0-9._-]/gi, '_');
-      saveFile(data, `${baseName}.${ext}`, ext === 'ts' ? 'video/mp2t' : 'video/mp4');
-      setState({ status: 'done' });
+      saveFile(data, `${baseName}.${ext}`, mime);
+      setState({ status: 'done', url: video.url });
     } catch (err) {
-      setState({ status: 'error', message: err instanceof Error ? err.message : String(err) });
+      setState({
+        status: 'error',
+        url: video.url,
+        message: err instanceof Error ? err.message : String(err),
+      });
     }
   }, []);
 

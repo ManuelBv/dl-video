@@ -30,12 +30,25 @@ export function parseMasterPlaylist(content: string, baseUrl: string): QualityOp
   return qualities;
 }
 
-export function parseMediaPlaylist(content: string, baseUrl: string): SegmentInfo[] {
-  if (!content.includes('#EXTM3U')) return [];
+export interface MediaPlaylist {
+  /** fMP4 initialisation segment URL (from #EXT-X-MAP), if present */
+  initUrl?: string;
+  segments: SegmentInfo[];
+}
+
+export function parseMediaPlaylist(content: string, baseUrl: string): MediaPlaylist {
+  if (!content.includes('#EXTM3U')) return { segments: [] };
   const lines = content.split('\n').map((l) => l.trim()).filter(Boolean);
   const segments: SegmentInfo[] = [];
+  let initUrl: string | undefined;
 
   for (let i = 0; i < lines.length; i++) {
+    // fMP4 initialisation segment — must be downloaded first
+    if (lines[i].startsWith('#EXT-X-MAP:')) {
+      const m = /URI="([^"]+)"/.exec(lines[i]);
+      if (m) initUrl = resolveUrl(m[1], baseUrl);
+    }
+
     if (lines[i].startsWith('#EXTINF:')) {
       const durationStr = lines[i].slice('#EXTINF:'.length).split(',')[0];
       const duration = parseFloat(durationStr);
@@ -47,5 +60,5 @@ export function parseMediaPlaylist(content: string, baseUrl: string): SegmentInf
     }
   }
 
-  return segments;
+  return { initUrl, segments };
 }

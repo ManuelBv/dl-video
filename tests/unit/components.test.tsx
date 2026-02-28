@@ -54,13 +54,13 @@ test('ErrorState shows error message', () => {
 
 // Cycle 5: VideoItem renders label and format
 test('VideoItem renders video label', () => {
-  render(<VideoItem video={mockVideo} rightsGranted={false} onDownload={() => {}} />);
+  render(<VideoItem video={mockVideo} rightsGranted={false} isDownloading={false} downloadDone={false} onDownload={() => {}} />);
   expect(screen.getByText('Sample Video')).toBeInTheDocument();
 });
 
 // Cycle 6: VideoItem DRM shows badge and disables download
 test('VideoItem shows DRM badge for protected video', () => {
-  render(<VideoItem video={drmVideo} rightsGranted={false} onDownload={() => {}} />);
+  render(<VideoItem video={drmVideo} rightsGranted={false} isDownloading={false} downloadDone={false} onDownload={() => {}} />);
   expect(screen.getByText(/drm/i)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /download/i })).toBeDisabled();
 });
@@ -77,13 +77,25 @@ test('RightsCheckbox is unchecked by default and toggles', () => {
 
 // Cycle 8: VideoItem download button disabled until rights granted
 test('VideoItem download button disabled when rights not granted', () => {
-  render(<VideoItem video={mockVideo} rightsGranted={false} onDownload={() => {}} />);
+  render(<VideoItem video={mockVideo} rightsGranted={false} isDownloading={false} downloadDone={false} onDownload={() => {}} />);
   expect(screen.getByRole('button', { name: /download/i })).toBeDisabled();
 });
 
 test('VideoItem download button enabled when rights granted', () => {
-  render(<VideoItem video={mockVideo} rightsGranted={true} onDownload={() => {}} />);
+  render(<VideoItem video={mockVideo} rightsGranted={true} isDownloading={false} downloadDone={false} onDownload={() => {}} />);
   expect(screen.getByRole('button', { name: /download/i })).not.toBeDisabled();
+});
+
+// Cycle 10: VideoItem shows Downloading… when isDownloading
+test('VideoItem shows downloading state on active item', () => {
+  render(<VideoItem video={mockVideo} rightsGranted={true} isDownloading={true} downloadDone={false} onDownload={() => {}} />);
+  expect(screen.getByRole('button', { name: /downloading/i })).toBeDisabled();
+});
+
+// Cycle 11: VideoItem shows Done after download completes
+test('VideoItem shows done state after download', () => {
+  render(<VideoItem video={mockVideo} rightsGranted={true} isDownloading={false} downloadDone={true} onDownload={() => {}} />);
+  expect(screen.getByRole('button', { name: /done/i })).toBeInTheDocument();
 });
 
 // Cycle 9: DownloadProgress shows percentage

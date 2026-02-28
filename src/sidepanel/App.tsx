@@ -18,9 +18,8 @@ export default function App() {
   const pageUrl = scanState.status === 'done' ? scanState.result.pageUrl : null;
   const videos = scanState.status === 'done' ? scanState.result.videos : [];
 
-  function handleDownload(video: DetectedVideo) {
-    download(video);
-  }
+  const activeUrl = downloadState.status === 'downloading' ? downloadState.url : null;
+  const doneUrl = downloadState.status === 'done' ? downloadState.url : null;
 
   return (
     <div className="p-4 min-h-screen bg-white text-sm flex flex-col gap-3">
@@ -51,7 +50,9 @@ export default function App() {
                 key={video.url}
                 video={video}
                 rightsGranted={rightsGranted}
-                onDownload={handleDownload}
+                isDownloading={activeUrl === video.url}
+                downloadDone={doneUrl === video.url}
+                onDownload={(v: DetectedVideo) => download(v)}
               />
             ))}
           </div>

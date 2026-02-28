@@ -36,7 +36,7 @@ test('extracts resolution from STREAM-INF', () => {
 // Cycle 4: parses media playlist segment list
 test('parses media playlist and returns 3 segments', () => {
   const content = fixture('sample-media.m3u8');
-  const segments = parseMediaPlaylist(content, BASE);
+  const { segments } = parseMediaPlaylist(content, BASE);
   expect(segments).toHaveLength(3);
   expect(segments[0].url).toBe(`${BASE}seg0.ts`);
   expect(segments[2].url).toBe(`${BASE}seg2.ts`);
@@ -45,7 +45,7 @@ test('parses media playlist and returns 3 segments', () => {
 // Cycle 5: parses segment durations
 test('extracts segment durations from EXTINF', () => {
   const content = fixture('sample-media.m3u8');
-  const segments = parseMediaPlaylist(content, BASE);
+  const { segments } = parseMediaPlaylist(content, BASE);
   expect(segments[0].duration).toBe(10.0);
   expect(segments[2].duration).toBe(5.0);
 });
@@ -53,6 +53,22 @@ test('extracts segment durations from EXTINF', () => {
 // Cycle 6: returns empty for invalid input
 test('returns empty arrays for empty/invalid input', () => {
   expect(parseMasterPlaylist('', BASE)).toHaveLength(0);
-  expect(parseMediaPlaylist('', BASE)).toHaveLength(0);
+  expect(parseMediaPlaylist('', BASE).segments).toHaveLength(0);
   expect(parseMasterPlaylist('not a playlist', BASE)).toHaveLength(0);
+});
+
+// Cycle 7: parses EXT-X-MAP init segment URL for fMP4 streams
+test('extracts initUrl from EXT-X-MAP for fMP4 playlists', () => {
+  const content = [
+    '#EXTM3U',
+    '#EXT-X-VERSION:7',
+    '#EXT-X-MAP:URI="init-0.mp4"',
+    '#EXTINF:6.000,',
+    'seg-001.m4s',
+    '#EXT-X-ENDLIST',
+  ].join('\n');
+  const { initUrl, segments } = parseMediaPlaylist(content, BASE);
+  expect(initUrl).toBe(`${BASE}init-0.mp4`);
+  expect(segments).toHaveLength(1);
+  expect(segments[0].url).toBe(`${BASE}seg-001.m4s`);
 });
