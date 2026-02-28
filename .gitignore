@@ -25,3 +25,6 @@ dist-ssr
 
 # Local test downloads
 public/
+
+# Claude local settings
+.claude/settings.local.json
