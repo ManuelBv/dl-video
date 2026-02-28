@@ -37,29 +37,52 @@ function parseKeyLine(line: string, baseUrl: string): HlsKeyInfo | undefined {
   };
 }
 
-export function parseMasterPlaylist(content: string, baseUrl: string): QualityOption[] {
-  if (!content.includes('#EXTM3U')) return [];
+export interface MasterPlaylist {
+  qualities: QualityOption[];
+  /** Maps #EXT-X-MEDIA GROUP-ID → resolved URI for audio streams */
+  audioStreams: Record<string, string>;
+}
+
+export function parseMasterPlaylist(content: string, baseUrl: string): MasterPlaylist {
+  if (!content.includes('#EXTM3U')) return { qualities: [], audioStreams: {} };
   const lines = content.split('\n').map((l) => l.trim()).filter(Boolean);
   const qualities: QualityOption[] = [];
+  const audioStreams: Record<string, string> = {};
 
   for (let i = 0; i < lines.length; i++) {
+    // Parse audio rendition entries
+    if (lines[i].startsWith('#EXT-X-MEDIA:')) {
+      const attrs = lines[i].slice('#EXT-X-MEDIA:'.length);
+      const typeMatch = /TYPE=([^,\s]+)/.exec(attrs);
+      if (typeMatch?.[1] === 'AUDIO') {
+        const groupMatch = /GROUP-ID="([^"]+)"/.exec(attrs);
+        const uriMatch = /URI="([^"]+)"/.exec(attrs);
+        if (groupMatch && uriMatch) {
+          audioStreams[groupMatch[1]] = resolveUrl(uriMatch[1], baseUrl);
+        }
+      }
+    }
+
+    // Parse video variant streams
     if (lines[i].startsWith('#EXT-X-STREAM-INF:')) {
       const attrs = lines[i].slice('#EXT-X-STREAM-INF:'.length);
       const bandwidthMatch = /BANDWIDTH=(\d+)/.exec(attrs);
       const resolutionMatch = /RESOLUTION=([\dx]+)/.exec(attrs);
+      const audioGroupMatch = /AUDIO="([^"]+)"/.exec(attrs);
       const url = lines[i + 1];
       if (url && !url.startsWith('#')) {
         qualities.push({
           bandwidth: bandwidthMatch ? parseInt(bandwidthMatch[1], 10) : 0,
           resolution: resolutionMatch ? resolutionMatch[1] : undefined,
           url: resolveUrl(url, baseUrl),
+          audioGroupId: audioGroupMatch?.[1],
         });
         i++;
       }
     }
   }
 
-  return qualities;
+  return { qualities, audioStreams };
 }
 
 export interface MediaPlaylist {
@@ -91,12 +114,8 @@ export function parseMediaPlaylist(content: string, baseUrl: string): MediaPlayl
       const duration = parseFloat(durationStr);
       const url = lines[i + 1];
       if (url && !url.startsWith('#')) {
-        // If key has no explicit IV, use the segment sequence index
         const key: HlsKeyInfo | undefined = currentKey
-          ? {
-              ...currentKey,
-              iv: currentKey.iv ?? parseIv(segmentIndex.toString(16)),
-            }
+          ? { ...currentKey, iv: currentKey.iv ?? parseIv(segmentIndex.toString(16)) }
           : undefined;
         segments.push({ url: resolveUrl(url, baseUrl), duration, key });
         segmentIndex++;

@@ -10,54 +10,62 @@ function fixture(name: string): string {
 
 // Cycle 1: parses master playlist with 2 quality levels
 test('parses master playlist and returns 2 quality options', () => {
-  const content = fixture('sample-master.m3u8');
-  const qualities = parseMasterPlaylist(content, BASE);
+  const { qualities } = parseMasterPlaylist(fixture('sample-master.m3u8'), BASE);
   expect(qualities).toHaveLength(2);
   expect(qualities[0].bandwidth).toBe(500000);
   expect(qualities[1].bandwidth).toBe(1500000);
 });
 
-// Cycle 2: resolves relative segment URLs against base
+// Cycle 2: resolves relative variant URLs against base
 test('resolves relative variant URLs against base URL', () => {
-  const content = fixture('sample-master.m3u8');
-  const qualities = parseMasterPlaylist(content, BASE);
+  const { qualities } = parseMasterPlaylist(fixture('sample-master.m3u8'), BASE);
   expect(qualities[0].url).toBe(`${BASE}360p.m3u8`);
   expect(qualities[1].url).toBe(`${BASE}720p.m3u8`);
 });
 
 // Cycle 3: extracts resolution from master playlist
 test('extracts resolution from STREAM-INF', () => {
-  const content = fixture('sample-master.m3u8');
-  const qualities = parseMasterPlaylist(content, BASE);
+  const { qualities } = parseMasterPlaylist(fixture('sample-master.m3u8'), BASE);
   expect(qualities[0].resolution).toBe('640x360');
   expect(qualities[1].resolution).toBe('1280x720');
 });
 
-// Cycle 4: parses media playlist segment list
+// Cycle 4: parses audio stream from EXT-X-MEDIA
+test('parses #EXT-X-MEDIA:TYPE=AUDIO entries into audioStreams', () => {
+  const content = [
+    '#EXTM3U',
+    '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",DEFAULT=YES,URI="audio/index.m3u8"',
+    '#EXT-X-STREAM-INF:BANDWIDTH=2000000,AUDIO="audio"',
+    'video/index.m3u8',
+  ].join('\n');
+  const { qualities, audioStreams } = parseMasterPlaylist(content, BASE);
+  expect(audioStreams['audio']).toBe(`${BASE}audio/index.m3u8`);
+  expect(qualities[0].audioGroupId).toBe('audio');
+});
+
+// Cycle 5: parses media playlist segment list
 test('parses media playlist and returns 3 segments', () => {
-  const content = fixture('sample-media.m3u8');
-  const { segments } = parseMediaPlaylist(content, BASE);
+  const { segments } = parseMediaPlaylist(fixture('sample-media.m3u8'), BASE);
   expect(segments).toHaveLength(3);
   expect(segments[0].url).toBe(`${BASE}seg0.ts`);
   expect(segments[2].url).toBe(`${BASE}seg2.ts`);
 });
 
-// Cycle 5: parses segment durations
+// Cycle 6: parses segment durations
 test('extracts segment durations from EXTINF', () => {
-  const content = fixture('sample-media.m3u8');
-  const { segments } = parseMediaPlaylist(content, BASE);
+  const { segments } = parseMediaPlaylist(fixture('sample-media.m3u8'), BASE);
   expect(segments[0].duration).toBe(10.0);
   expect(segments[2].duration).toBe(5.0);
 });
 
-// Cycle 6: returns empty for invalid input
+// Cycle 7: returns empty for invalid input
 test('returns empty arrays for empty/invalid input', () => {
-  expect(parseMasterPlaylist('', BASE)).toHaveLength(0);
+  expect(parseMasterPlaylist('', BASE).qualities).toHaveLength(0);
   expect(parseMediaPlaylist('', BASE).segments).toHaveLength(0);
-  expect(parseMasterPlaylist('not a playlist', BASE)).toHaveLength(0);
+  expect(parseMasterPlaylist('not a playlist', BASE).qualities).toHaveLength(0);
 });
 
-// Cycle 7: resolves root-relative segment URLs correctly
+// Cycle 8: resolves root-relative segment URLs correctly
 test('resolves root-relative segment URLs against origin', () => {
   const content = [
     '#EXTM3U',
@@ -69,7 +77,7 @@ test('resolves root-relative segment URLs against origin', () => {
   expect(segments[0].url).toBe('https://cdn.example.com/videos/seg-001.ts');
 });
 
-// Cycle 8: parses EXT-X-MAP init segment URL for fMP4 streams
+// Cycle 9: parses EXT-X-MAP init segment URL for fMP4 streams
 test('extracts initUrl from EXT-X-MAP for fMP4 playlists', () => {
   const content = [
     '#EXTM3U',

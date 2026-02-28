@@ -9,18 +9,21 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => 
 // they fetch it via API and pipe it into a blob. Intercepting the request
 // gives us the real URL before it becomes a blob.
 
-const streamCache = new Map<number, Set<string>>();
+// Only the FIRST stream URL captured per tab is kept.
+// When playback starts, the player always fetches the master playlist first,
+// so this gives us the master (which contains all quality variants and audio
+// stream references).  Quality-variant playlists fetched afterwards are ignored.
+const streamCache = new Map<number, string>();
 
 const STREAM_EXTENSIONS = ['.m3u8', '.mpd'];
 
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
     const { tabId, url } = details;
-    if (tabId < 0) return;
+    if (tabId < 0 || streamCache.has(tabId)) return;
     const lower = url.toLowerCase();
     if (STREAM_EXTENSIONS.some((ext) => lower.includes(ext))) {
-      if (!streamCache.has(tabId)) streamCache.set(tabId, new Set());
-      streamCache.get(tabId)!.add(url);
+      streamCache.set(tabId, url);
     }
   },
   { urls: ['<all_urls>'] },
@@ -48,8 +51,8 @@ chrome.runtime.onMessage.addListener(
         return;
       }
 
-      // Grab network-intercepted stream URLs for this tab
-      const networkStreams = Array.from(streamCache.get(tabId) ?? []);
+      // Grab the single master-playlist URL intercepted for this tab (if any)
+      const networkStreams = streamCache.has(tabId) ? [streamCache.get(tabId)!] : [];
 
       chrome.scripting
         .executeScript({ target: { tabId }, func: scanPageContent })

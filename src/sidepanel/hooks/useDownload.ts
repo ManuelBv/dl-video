@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import type { DetectedVideo, SegmentInfo } from '../../shared/types.ts';
 import { parseMasterPlaylist, parseMediaPlaylist } from '../../lib/hls-parser.ts';
 import { decryptAes128 } from '../../lib/aes-decryptor.ts';
+import { mergeInitSegments, patchAudioSegment } from '../../lib/fmp4-merger.ts';
 import { concatSegments } from '../../lib/mp4-muxer.ts';
 import { saveFile } from '../../lib/file-saver.ts';
 
@@ -27,34 +28,7 @@ function baseOf(url: string): string {
   return url.substring(0, url.lastIndexOf('/') + 1);
 }
 
-interface HlsResolved {
-  initUrl?: string;
-  segments: SegmentInfo[];
-  isFmp4: boolean;
-}
-
-async function resolveHls(manifestUrl: string, signal: AbortSignal): Promise<HlsResolved> {
-  const content = await fetchText(manifestUrl, signal);
-  const base = baseOf(manifestUrl);
-
-  // Master playlist → pick highest-bandwidth variant
-  const qualities = parseMasterPlaylist(content, base);
-  if (qualities.length > 0) {
-    const best = qualities.reduce((a, b) => (a.bandwidth >= b.bandwidth ? a : b));
-    const mediaContent = await fetchText(best.url, signal);
-    const { initUrl, segments } = parseMediaPlaylist(mediaContent, baseOf(best.url));
-    return { initUrl, segments, isFmp4: Boolean(initUrl) };
-  }
-
-  // Already a media playlist
-  const { initUrl, segments } = parseMediaPlaylist(content, base);
-  if (segments.length > 0) return { initUrl, segments, isFmp4: Boolean(initUrl) };
-
-  // Not a recognised playlist — treat as a single file
-  return { segments: [{ url: manifestUrl }], isFmp4: false };
-}
-
-async function downloadAndDecryptSegments(
+async function downloadAndDecrypt(
   segments: SegmentInfo[],
   onProgress: (done: number, total: number) => void,
   signal: AbortSignal,
@@ -63,15 +37,51 @@ async function downloadAndDecryptSegments(
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
     let data = await fetchBytes(seg.url, signal);
-
     if (seg.key?.method === 'AES-128' && seg.key.uri && seg.key.iv) {
       data = await decryptAes128(data, seg.key.uri, seg.key.iv, signal);
     }
-
     results.push(data);
     onProgress(i + 1, segments.length);
   }
   return results;
+}
+
+interface HlsResolved {
+  videoInitUrl?: string;
+  videoSegments: SegmentInfo[];
+  audioInitUrl?: string;
+  audioSegments?: SegmentInfo[];
+  isFmp4: boolean;
+}
+
+async function resolveHls(manifestUrl: string, signal: AbortSignal): Promise<HlsResolved> {
+  const content = await fetchText(manifestUrl, signal);
+  const base = baseOf(manifestUrl);
+  const { qualities, audioStreams } = parseMasterPlaylist(content, base);
+
+  if (qualities.length > 0) {
+    // Pick highest-bandwidth video variant
+    const best = qualities.reduce((a, b) => (a.bandwidth >= b.bandwidth ? a : b));
+    const videoContent = await fetchText(best.url, signal);
+    const { initUrl: videoInitUrl, segments: videoSegments } = parseMediaPlaylist(videoContent, baseOf(best.url));
+
+    // Look up the audio stream linked to this variant
+    let audioInitUrl: string | undefined;
+    let audioSegments: SegmentInfo[] | undefined;
+    const audioUrl = best.audioGroupId ? audioStreams[best.audioGroupId] : undefined;
+    if (audioUrl) {
+      const audioContent = await fetchText(audioUrl, signal);
+      const { initUrl, segments } = parseMediaPlaylist(audioContent, baseOf(audioUrl));
+      audioInitUrl = initUrl;
+      audioSegments = segments;
+    }
+
+    return { videoInitUrl, videoSegments, audioInitUrl, audioSegments, isFmp4: Boolean(videoInitUrl) };
+  }
+
+  // Already a media playlist (no variants)
+  const { initUrl, segments } = parseMediaPlaylist(content, base);
+  return { videoInitUrl: initUrl, videoSegments: segments, isFmp4: Boolean(initUrl) };
 }
 
 export function useDownload() {
@@ -83,32 +93,63 @@ export function useDownload() {
 
     try {
       if (video.format === 'hls') {
-        const { initUrl, segments, isFmp4 } = await resolveHls(video.url, controller.signal);
+        const { videoInitUrl, videoSegments, audioInitUrl, audioSegments, isFmp4 } =
+          await resolveHls(video.url, controller.signal);
 
-        const allParts: Uint8Array[] = [];
+        const totalSegments = videoSegments.length + (audioSegments?.length ?? 0);
+        let doneCount = 0;
+        const report = (d: number) => {
+          doneCount += d;
+          setState({ status: 'downloading', url: video.url, downloaded: doneCount, total: totalSegments });
+        };
 
-        // fMP4 init segment is not encrypted — download it separately
-        if (initUrl) {
-          allParts.push(await fetchBytes(initUrl, controller.signal));
-        }
-
-        const decrypted = await downloadAndDecryptSegments(
-          segments,
-          (done, total) => setState({ status: 'downloading', url: video.url, downloaded: done, total }),
+        const videoData = await downloadAndDecrypt(
+          videoSegments,
+          (d) => report(d),
           controller.signal,
         );
-        allParts.push(...decrypted);
 
-        const data = concatSegments(allParts);
-        const ext = isFmp4 ? 'mp4' : 'ts';
-        const mime = isFmp4 ? 'video/mp4' : 'video/mp2t';
-        const baseName = video.label.replace(/\.[^.]+$/, '').replace(/[^a-z0-9._-]/gi, '_');
-        saveFile(data, `${baseName}.${ext}`, mime);
+        if (isFmp4 && videoInitUrl) {
+          const videoInit = await fetchBytes(videoInitUrl, controller.signal);
+
+          if (audioSegments && audioSegments.length > 0 && audioInitUrl) {
+            // fMP4 with separate audio stream — download, decrypt, then merge tracks
+            const audioInit = await fetchBytes(audioInitUrl, controller.signal);
+            const audioData = await downloadAndDecrypt(
+              audioSegments,
+              (d) => report(d),
+              controller.signal,
+            );
+
+            const { initSegment, audioTrackIdOriginal, audioTrackIdFinal } =
+              mergeInitSegments(videoInit, audioInit);
+
+            const patchedAudio = audioData.map((seg) =>
+              patchAudioSegment(seg, audioTrackIdOriginal, audioTrackIdFinal),
+            );
+
+            const data = concatSegments([initSegment, ...videoData, ...patchedAudio]);
+            const baseName = video.label.replace(/\.[^.]+$/, '').replace(/[^a-z0-9._-]/gi, '_');
+            saveFile(data, `${baseName}.mp4`, 'video/mp4');
+          } else {
+            // fMP4, video only (no audio stream found in master)
+            const data = concatSegments([videoInit, ...videoData]);
+            const baseName = video.label.replace(/\.[^.]+$/, '').replace(/[^a-z0-9._-]/gi, '_');
+            saveFile(data, `${baseName}.mp4`, 'video/mp4');
+          }
+        } else {
+          // MPEG-TS — segments are typically already muxed (audio+video together)
+          const data = concatSegments(videoData);
+          const baseName = video.label.replace(/\.[^.]+$/, '').replace(/[^a-z0-9._-]/gi, '_');
+          saveFile(data, `${baseName}.ts`, 'video/mp2t');
+        }
       } else {
         // Direct file download (mp4, webm, etc.)
+        setState({ status: 'downloading', url: video.url, downloaded: 0, total: 1 });
         const data = await fetchBytes(video.url, controller.signal);
+        setState({ status: 'downloading', url: video.url, downloaded: 1, total: 1 });
         const urlExt = video.url.split('.').pop()?.split('?')[0]?.toLowerCase() ?? 'mp4';
-        const ext = ['mp4', 'webm', 'mov', 'ogg'].includes(urlExt) ? urlExt : 'mp4';
+        const ext = ['mp4', 'webm', 'mov'].includes(urlExt) ? urlExt : 'mp4';
         const baseName = video.label.replace(/\.[^.]+$/, '').replace(/[^a-z0-9._-]/gi, '_');
         saveFile(data, `${baseName}.${ext}`, 'video/mp4');
       }

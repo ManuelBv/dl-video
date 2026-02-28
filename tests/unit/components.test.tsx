@@ -92,10 +92,12 @@ test('VideoItem shows downloading state on active item', () => {
   expect(screen.getByRole('button', { name: /downloading/i })).toBeDisabled();
 });
 
-// Cycle 11: VideoItem shows Done after download completes
-test('VideoItem shows done state after download', () => {
+// Cycle 11: VideoItem shows checkmark indicator but Download button when done
+test('VideoItem shows checkmark indicator and Download button after download', () => {
   render(<VideoItem video={mockVideo} rightsGranted={true} isDownloading={false} downloadDone={true} onDownload={() => {}} />);
-  expect(screen.getByRole('button', { name: /done/i })).toBeInTheDocument();
+  expect(screen.getByText('✓')).toBeInTheDocument();
+  // Download button still present and enabled
+  expect(screen.getByRole('button', { name: /download/i })).not.toBeDisabled();
 });
 
 // Cycle 9: DownloadProgress shows percentage

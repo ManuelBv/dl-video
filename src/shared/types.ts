@@ -13,6 +13,8 @@ export interface QualityOption {
   bandwidth: number;
   resolution?: string;
   url: string;
+  /** References an #EXT-X-MEDIA:TYPE=AUDIO GROUP-ID for this video variant */
+  audioGroupId?: string;
 }
 
 export interface HlsKeyInfo {
