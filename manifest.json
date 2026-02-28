@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "dl-video",
+  "version": "0.1.0",
+  "description": "Detect and download video assets from any web page.",
+  "minimum_chrome_version": "120",
+  "permissions": [
+    "activeTab",
+    "sidePanel",
+    "scripting",
+    "downloads"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "dl-video"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

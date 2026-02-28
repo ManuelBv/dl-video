@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" mediaPresentationDuration="PT60S" type="static">
+  <Period>
+    <AdaptationSet mimeType="video/mp4">
+      <Representation id="1" bandwidth="500000" width="640" height="360" codecs="avc1.42E01E">
+        <SegmentTemplate media="seg_$Number$.m4s" initialization="init.mp4" startNumber="1" duration="10" timescale="1"/>
+      </Representation>
+      <Representation id="2" bandwidth="1500000" width="1280" height="720" codecs="avc1.64001F">
+        <SegmentTemplate media="seg_$Number$.m4s" initialization="init.mp4" startNumber="1" duration="10" timescale="1"/>
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>

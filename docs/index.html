@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dl-video — Chrome Extension</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f9fafb;
+      color: #111;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 2.5rem;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: .5rem; }
+    .tagline { color: #6b7280; margin-bottom: 2rem; }
+    .download-btn {
+      display: inline-block;
+      background: #2563eb;
+      color: #fff;
+      text-decoration: none;
+      padding: .75rem 1.75rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      transition: background .15s;
+    }
+    .download-btn:hover { background: #1d4ed8; }
+    .steps { text-align: left; margin-bottom: 2rem; }
+    .steps h2 { font-size: 1rem; font-weight: 600; margin-bottom: .75rem; color: #374151; }
+    .steps ol { padding-left: 1.25rem; color: #4b5563; line-height: 1.8; }
+    .steps code {
+      background: #f3f4f6;
+      padding: .1em .35em;
+      border-radius: 4px;
+      font-size: .875em;
+    }
+    .legal { font-size: .75rem; color: #9ca3af; line-height: 1.5; }
+    .legal a { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>dl-video</h1>
+    <p class="tagline">Detect and download video assets from any web page.</p>
+
+    <a class="download-btn" id="dl-link" href="dl-video-extension.zip" download>
+      ⬇ Download Extension (.zip)
+    </a>
+
+    <div class="steps">
+      <h2>How to install</h2>
+      <ol>
+        <li>Download the <strong>.zip</strong> file above and unzip it.</li>
+        <li>Open Chrome and go to <code>chrome://extensions</code>.</li>
+        <li>Enable <strong>Developer mode</strong> (top-right toggle).</li>
+        <li>Click <strong>Load unpacked</strong> and select the unzipped <code>dist/</code> folder.</li>
+        <li>The dl-video icon will appear in your toolbar. Click it to open the side panel.</li>
+      </ol>
+    </div>
+
+    <p class="legal">
+      For lawful personal use only. You are solely responsible for ensuring
+      your downloads comply with applicable copyright law and platform terms of service.<br><br>
+      <a href="https://github.com/ManuelBv/dl-video">View source on GitHub</a>
+    </p>
+  </div>
+</body>
+</html>
