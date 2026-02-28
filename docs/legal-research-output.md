@@ -13,10 +13,10 @@
 The principal legal exposures are:
 
 1. **Copyright infringement liability** — both for the developer (as a tool provider) and for end-users (as direct infringers) — when the tool is used to download content that is protected by copyright and not licensed for local copying.
-2. **Platform Terms of Service violations** — nearly every major streaming platform (YouTube, Vimeo, Twitch, etc.) prohibits downloading via ToS; such violations may constitute breach of contract actionable independently of copyright claims.
+2. **Platform Terms of Service violations** — nearly every major streaming platform prohibits downloading via ToS; such violations may constitute breach of contract actionable independently of copyright claims.
 3. **Developer / contributory infringement liability** — under the *Sony* "substantial non-infringing use" doctrine, the tool may be protected if it has meaningful lawful uses, but this protection is not absolute and depends on the facts of use and any promotional framing.
 4. **DMCA §1201 / EU Art. 6 / CDPA s.296ZA anti-circumvention exposure** — low risk for dl-video specifically because it does not bypass DRM, but the distinction must be maintained rigorously in the codebase and documentation.
-5. **Enforcement trajectory** — industry bodies (RIAA, BPI, IFPI, MPAA) have actively and successfully sued or obtained ISP-blocking orders against stream-ripping tools across all three jurisdictions. The Hamburg Appeal Court (November 2024) confirmed liability against a hosting provider of youtube-dl, making the legal risk concrete and recent.
+5. **Enforcement trajectory** — industry bodies (RIAA, BPI, IFPI, MPAA) have actively and successfully sued or obtained ISP-blocking orders against stream-ripping tools across all three jurisdictions. The Hamburg Appeal Court (November 2024) confirmed liability against a hosting provider of a stream-ripping tool, making the legal risk concrete and recent.
 
 The tool sits in a legally contested space. It can be operated in a significantly lower-risk posture with careful feature constraints, clear user-facing disclosures, and proactive compliance measures — all detailed below.
 
@@ -59,22 +59,18 @@ The **BPI landmark 2021 ruling**: Mr Justice Miles at the High Court (under s.97
 Article 5(2)(b) of the InfoSoc Directive permits Member States to introduce a private copying exception "for private use and for ends that are neither directly nor indirectly commercial," conditioned on fair compensation to rights holders. Most EU Member States (Germany, France, Spain, Netherlands) have implemented such exceptions. However, the CJEU has consistently held that:
 
 - The private copying exception **only applies to reproductions from lawful sources** (ACI Adam BV and Others v. Stichting de Thuiskopie, C-435/12, 2014).
-- Where the source is an authorised streaming platform but the user does not have a licence for local copying (e.g., a YouTube video not licensed for download), the source may be deemed "unlawful" for the purpose of the exception.
+- Where the source is an authorised streaming platform but the user does not have a licence for local copying (e.g., a video not licensed for download), the source may be deemed "unlawful" for the purpose of the exception.
 - The Dutch Supreme Court has referred questions to the CJEU specifically about whether "offline streaming copies" fall within Article 5(2)(b) — this question was pending as of the date of this research.
 
-**Germany enforcement (2023–2024)**: In April 2023, the Hamburg Regional Court issued an injunction against the individual hosting youtube-dl, requiring cessation of hosting. In November 2024, the Hamburg Appeal Court dismissed the appeal, confirming the injunction and requiring the defendant to pay damages. This decision is final.
+**Germany enforcement (2023–2024)**: In April 2023, the Hamburg Regional Court issued an injunction against the individual hosting a stream-ripping tool, requiring cessation of hosting. In November 2024, the Hamburg Appeal Court dismissed the appeal, confirming the injunction and requiring the defendant to pay damages. This decision is final.
 
 ---
 
 ### Platform Terms of Service & Contract Law
 
-Virtually every major video platform prohibits automated downloading or scraping in its Terms of Service. Relevant prohibitions appear in:
+Virtually every major video platform prohibits automated downloading or scraping in its Terms of Service. These prohibitions typically bar users from downloading, reproducing, or otherwise exploiting content without prior written consent, and from using automated tools to access or record content.
 
-- YouTube Terms of Service, §§ 5.B, 5.C: users may not download, reproduce, or otherwise exploit any content without prior written consent from YouTube.
-- Vimeo Terms of Service: prohibits downloading or reproducing content without authorisation.
-- Twitch Terms of Service: prohibits automated access or recording.
-
-**Enforceability**: In the US, website ToS constitute binding contracts when users have notice and assent (browse-wrap or click-wrap). Breach of ToS can give rise to breach of contract claims independently of copyright claims. A 2024 federal court ruling (relating to X/Twitter scraping) held that the Copyright Act may **preempt** some ToS-based claims, creating a circuit split. However, this preemption argument is not universally available and ToS breach remains a live litigation risk.
+**Enforceability**: In the US, website ToS constitute binding contracts when users have notice and assent (browse-wrap or click-wrap). Breach of ToS can give rise to breach of contract claims independently of copyright claims. A 2024 federal court ruling (relating to social media platform scraping) held that the Copyright Act may **preempt** some ToS-based claims, creating a circuit split. However, this preemption argument is not universally available and ToS breach remains a live litigation risk.
 
 **CFAA and ToS**: Under the CFAA (18 U.S.C. § 1030), accessing a computer "without authorisation" can constitute a federal crime. The Ninth Circuit's 2022 ruling in *hiQ Labs v. LinkedIn* held that scraping **publicly accessible** data does not violate the CFAA solely because it is prohibited by ToS. However, the case settled in December 2022 with hiQ paying $500,000 in damages under its own contractual obligations. The CFAA risk is **low** for dl-video in the context of fetching publicly accessible pages, but is not zero.
 
@@ -90,9 +86,9 @@ Virtually every major video platform prohibits automated downloading or scraping
 
 Section 1201 of the DMCA prohibits: (a) circumventing technological protection measures (TPMs) controlling access to copyrighted works; and (b) trafficking in tools primarily designed to circumvent TPMs.
 
-**The youtube-dl precedent**: In October 2020, the RIAA filed a §1201 DMCA takedown against youtube-dl on GitHub, claiming it circumvented YouTube's "rolling cipher." GitHub initially complied, but reinstated the project in November 2020 after the EFF intervened with a counter-notice arguing that: (i) the video streams themselves were **not DRM-encrypted**; (ii) the tool's behaviour was indistinguishable from that of a normal browser; and (iii) rolling cipher obfuscation of URLs is not a "technological protection measure" under §1201 because it does not control access to the copyrighted content itself — it controls the URL generation mechanism.
+**A key §1201 precedent**: In October 2020, the RIAA filed a §1201 DMCA takedown against a stream-ripping tool on GitHub, claiming it circumvented a streaming platform's "rolling cipher." GitHub initially complied, but reinstated the project in November 2020 after the EFF intervened with a counter-notice arguing that: (i) the video streams themselves were **not DRM-encrypted**; (ii) the tool's behaviour was indistinguishable from that of a normal browser; and (iii) rolling cipher obfuscation of URLs is not a "technological protection measure" under §1201 because it does not control access to the copyrighted content itself — it controls the URL generation mechanism.
 
-**Implication for dl-video**: Because dl-video targets **plain/public video URLs** (e.g., `<video src>` tags, HLS/DASH manifests that are already resolved in page source) and **does not bypass DRM**, the §1201 anti-circumvention risk is **low**. The tool does not circumvent CSS, Widevine, PlayReady, FairPlay, or any analogous TPM. GitHub confirmed post-youtube-dl that §1201 claims about software are scrutinised individually and require a plausible showing of circumvention.
+**Implication for dl-video**: Because dl-video targets **plain/public video URLs** (e.g., `<video src>` tags, HLS/DASH manifests that are already resolved in page source) and **does not bypass DRM**, the §1201 anti-circumvention risk is **low**. The tool does not circumvent CSS, Widevine, PlayReady, FairPlay, or any analogous TPM. GitHub confirmed following that decision that §1201 claims about software are scrutinised individually and require a plausible showing of circumvention.
 
 **Risk caveat**: If dl-video were ever extended to decode or bypass any token-gated, signed, or DRM-protected URL (even one that is technically "accessible"), §1201 exposure would immediately arise.
 
@@ -118,7 +114,7 @@ Under US secondary liability doctrine:
 - **Vicarious infringement**: Requires a direct financial benefit from infringement and the ability to control it. A free, open-source tool without monetisation is unlikely to meet this test.
 - **Inducement**: *MGM v. Grokster* added an "inducement" theory: a party who distributes a device with the object of promoting its use to infringe, as shown by clear expression or other affirmative steps to foster infringement, is liable regardless of the device's non-infringing capabilities.
 
-**Risk for dl-video**: If the tool's README, documentation, examples, or promotional material reference specific copyrighted streaming platforms (YouTube, Netflix, Spotify) as use cases, this constitutes affirmative evidence of inducement under *Grokster*. The tool must be positioned neutrally with respect to content ownership.
+**Risk for dl-video**: If the tool's README, documentation, examples, or promotional material reference specific copyrighted streaming platforms as use cases, this constitutes affirmative evidence of inducement under *Grokster*. The tool must be positioned neutrally with respect to content ownership.
 
 #### DMCA §512 Safe Harbour (US)
 
@@ -132,7 +128,7 @@ The Digital Services Act (Regulation (EU) 2022/2065), fully applicable since 17 
 
 Under ss.16–27 CDPA, secondary liability attaches to those who authorise infringement or deal in infringing copies with knowledge. A developer who publicly distributes a tool knowing it will be used to infringe, and who takes no steps to prevent this, risks secondary liability under UK law.
 
-**Hamburg 2024 decision**: The Hamburg Appeal Court's November 2024 ruling against the individual hosting youtube-dl held the hosting provider (not the software author) liable under German copyright law. This is notable because it shows that even **hosting providers** — not just tool authors — can face liability. The decision is jurisdiction-specific (Germany) but signals EU judicial willingness to hold infrastructure providers accountable.
+**Hamburg 2024 decision**: The Hamburg Appeal Court's November 2024 ruling against the individual hosting a stream-ripping tool held the hosting provider (not the software author) liable under German copyright law. This is notable because it shows that even **hosting providers** — not just tool authors — can face liability. The decision is jurisdiction-specific (Germany) but signals EU judicial willingness to hold infrastructure providers accountable.
 
 ---
 
@@ -158,10 +154,10 @@ The California Consumer Privacy Act applies to for-profit businesses meeting cer
 
 | Year | Jurisdiction | Action | Outcome |
 |---|---|---|---|
-| 2020 | US | RIAA DMCA takedown of youtube-dl on GitHub | Taken down; reinstated after EFF counter-notice |
+| 2020 | US | RIAA DMCA takedown of a stream-ripping tool on GitHub | Taken down; reinstated after EFF counter-notice |
 | 2021 | UK | BPI High Court action (s.97A CDPA) against stream-ripping sites | ISP blocking orders against Flvto, 2Conv, Flv2mp3, H2Converter, MP3 Studio |
 | 2022 | EU/US | hiQ v. LinkedIn (Ninth Circuit) | CFAA does not bar scraping public data; parties settled for $500k |
-| 2023 | Germany | IFPI/BVMI vs. youtube-dl hosting provider | Hamburg Regional Court injunction; hosting provider ordered to cease |
+| 2023 | Germany | IFPI/BVMI vs. stream-ripping tool hosting provider | Hamburg Regional Court injunction; hosting provider ordered to cease |
 | 2024 | Germany | Appeal of Hamburg 2023 decision | Hamburg Appeal Court dismissed appeal; injunction and damages confirmed (final) |
 | 2024 | US | RIAA v. FLVTO / 2conv | Potential $83 million in damages recommended |
 | 2024 | US | RIAA v. Suno (amended complaint) | Stream-ripping allegations added to AI copyright lawsuit |
@@ -176,7 +172,7 @@ The following features would materially increase legal risk and **must not** be 
 
 1. **DRM bypass of any kind**: Any feature that decodes Widevine, FairPlay, PlayReady, CSS, or any other technological protection measure would trigger DMCA §1201 / EU Art. 6 / CDPA s.296ZA anti-circumvention liability and would remove the tool's primary defence. This includes: decrypting HLS/DASH segments protected by AES-128 where the key is not served publicly, extracting tokens from DRM handshake flows, or bypassing geo-restriction systems.
 
-2. **Named references to specific copyrighted platforms in promotional materials**: Naming YouTube, Netflix, Disney+, Spotify, etc. as supported or target platforms in README, documentation, demo videos, or website copy constitutes *Grokster* inducement evidence and eliminates the *Sony* Betamax defence.
+2. **Named references to specific copyrighted platforms in promotional materials**: Naming specific streaming platforms as supported or target platforms in README, documentation, demo videos, or website copy constitutes *Grokster* inducement evidence and eliminates the *Sony* Betamax defence.
 
 3. **Automated/batch downloading features**: Features that automate download of multiple videos without per-video user action increase the "scale of infringement" argument and make the tool look more like a mass-infringement facilitator.
 
@@ -251,7 +247,7 @@ The following features would materially increase legal risk and **must not** be 
 | DMCA §1201 claim for anti-circumvention | US | DMCA §1201 | Low (no DRM bypass in current design) | Very High | Maintain strict no-DRM-bypass policy; document this clearly |
 | ISP blocking order obtained by BPI/RIAA | UK | CDPA s.97A | Low–Medium (requires commercial scale) | High (UK inaccessibility) | Avoid becoming a high-traffic destination; comply with notices |
 | Injunction against hosting provider (Hamburg model) | EU (Germany) | German UrhG / InfoSoc Directive | Low–Medium | Medium–High (removal from hosting) | Neutral positioning; DRM detection; ToU; comply with injunctions |
-| Breach of platform ToS — YouTube/Vimeo civil claim | US/UK/EU | Contract law | Medium | Medium (injunction, damages) | ToU on dl-video disclaiming platform ToS compliance responsibility |
+| Breach of platform ToS — civil claim | US/UK/EU | Contract law | Medium | Medium (injunction, damages) | ToU on dl-video disclaiming platform ToS compliance responsibility |
 | CFAA claim for accessing authenticated content | US | CFAA 18 U.S.C. § 1030 | Low (if restricted to public pages) | High (criminal exposure possible) | Restrict to publicly accessible pages only; no auth bypass |
 | GDPR enforcement for analytics/tracking data | EU / UK | GDPR / UK GDPR | Low (no backend) | Medium (fines up to €20M or 4% revenue) | Review GitHub Pages telemetry; publish Privacy Policy |
 | Computer Misuse Act (UK) for unauthorised access | UK | CMA 1990 | Low (if restricted to public pages) | High (criminal) | Restrict to public pages only |
@@ -277,20 +273,20 @@ The following features would materially increase legal risk and **must not** be 
 - *MGM Studios, Inc. v. Grokster, Ltd.*, 545 U.S. 913 (2005) — Inducement theory
 - *hiQ Labs, Inc. v. LinkedIn Corp.*, 9th Cir. (April 2022) — CFAA and public web scraping
 - *ACI Adam BV and Others v. Stichting de Thuiskopie*, C-435/12 (CJEU 2014) — Private copying from lawful sources only
-- Hamburg Regional Court injunction against youtube-dl hosting provider (April 2023)
+- Hamburg Regional Court injunction against stream-ripping tool hosting provider (April 2023)
 - Hamburg Appeal Court — confirmed injunction, dismissed appeal (November 2024)
 - BPI High Court stream-ripping ISP blocking order, Mr Justice Miles (February 2021)
 
 ### Industry / Enforcement Sources
 
-- [EFF: GitHub Reinstates youtube-dl After RIAA's Abuse of DMCA](https://www.eff.org/deeplinks/2020/11/github-reinstates-youtube-dl-after-riaas-abuse-dmca)
-- [GitHub Blog: Standing Up for Developers — youtube-dl Is Back](https://github.blog/news-insights/policy-news-and-insights/standing-up-for-developers-youtube-dl-is-back/)
+- [EFF: GitHub Reinstates Stream-Ripping Tool After RIAA's Abuse of DMCA](https://www.eff.org/deeplinks/2020/11/github-reinstates-youtube-dl-after-riaas-abuse-dmca)
+- [GitHub Blog: Standing Up for Developers](https://github.blog/news-insights/policy-news-and-insights/standing-up-for-developers-youtube-dl-is-back/)
 - [RIAA: US Judge Recommends Millions in Damages Against Russian Stream-Ripping Services](https://www.riaa.com/u-s-judge-recommends-millions-in-damages-against-russian-stream-ripping-services-in-landmark-riaa-litigation/)
 - [RIAA: World's Largest Music Stream Ripping Site Shuts Down](https://www.riaa.com/worlds-largest-music-stream-ripping-site-shuts-successful-international-legal-action-record-industry/)
-- [IFPI: Hamburg Appeal Court Upholds Injunction Against youtube-dl Hosting Provider](https://www.ifpi.org/comment-from-ifpi-on-the-hamburg-appeal-courts-decision-to-uphold-its-order-against-hosting-provider-of-youtube-dl/)
+- [IFPI: Hamburg Appeal Court Upholds Injunction Against Stream-Ripping Tool Hosting Provider](https://www.ifpi.org/comment-from-ifpi-on-the-hamburg-appeal-courts-decision-to-uphold-its-order-against-hosting-provider-of-youtube-dl/)
 - [BPI: Record Industry Wins Double Landmark UK Court Victory](https://www.bpi.co.uk/news-analysis/record-industry-wins-double-landmark-uk-court-victory-in-new-cyberlocker-and-stream-ripping-piracy-cases)
 - [Fieldfisher: First UK Injunctions Against Cyberlocker and Stream-Ripping Sites](https://www.fieldfisher.com/en/services/intellectual-property/intellectual-property-blog/first-injunctions-ever-granted-in-the-uk-to-block)
-- [IFPI: Record Companies in Germany Take Successful Action Against youtube-dl Hosting Provider](https://www.ifpi.org/record-companies-in-germany-take-successful-action-against-hosting-provider-of-stream-ripping-software-youtube-dl/)
+- [IFPI: Record Companies in Germany Take Successful Action Against Stream-Ripping Tool Hosting Provider](https://www.ifpi.org/record-companies-in-germany-take-successful-action-against-hosting-provider-of-stream-ripping-software-youtube-dl/)
 - [TorrentFreak: High Court Orders UK ISPs to Block Stream-Ripping Sites](https://torrentfreat.com/high-court-orders-uk-isps-to-block-stream-ripping-cyberlocker-sites-210225/)
 - [Osborne Clarke: The Impact of Stream Ripping](https://www.osborneclarke.com/insights/the-impact-of-stream-ripping)
 - [Kluwer Copyright Blog: UK Private Copying Exception Ruled Illegal](https://legalblogs.wolterskluwer.com/copyright-blog/uk-private-copying-exception-ruled-illegal/)

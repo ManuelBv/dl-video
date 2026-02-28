@@ -17,14 +17,14 @@ Your job is **external legal research** — searching for applicable statutes, r
 - **EU InfoSoc Directive** (2001/29/EC): reproduction right, communication to the public, exceptions
 - **EU DSM Directive** (2019/790): upload filters, press publishers' right, text and data mining exceptions
 - **Berne Convention**: international baseline for copyright in video works
-- **Case law**: key rulings on stream-ripping, download tools (e.g. YouTube-dl DMCA, Streamripper, etc.)
+- **Case law**: key rulings on stream-ripping, download tools (e.g. stream-ripping DMCA cases, Streamripper, etc.)
 - **Stream-ripping**: legal status in US, UK, EU — is downloading an HLS/DASH stream infringing?
 - **Temporary copies exception**: does browser caching or buffering constitute lawful reproduction?
 - **Personal/private copying**: is downloading for personal use permitted in the relevant jurisdictions?
 - **Linking vs. copying**: does identifying a video URL on a page expose the tool to secondary liability?
 
 ### Platform Terms of Service & Contract Law
-- **YouTube ToS**, **Vimeo ToS**, **Twitch ToS**, **Twitter/X ToS**, **Facebook ToS**: what do they prohibit regarding automated access and download?
+- **Major platform Terms of Service**: what do they prohibit regarding automated access and download?
 - **hiQ v. LinkedIn** and related cases: enforceability of ToS against scrapers
 - **Computer Fraud and Abuse Act** (CFAA, US): does violating ToS constitute unauthorised access?
 - **Computer Misuse Act 1990** (UK): equivalent considerations
@@ -42,7 +42,7 @@ Your job is **external legal research** — searching for applicable statutes, r
 - **Secondary / contributory infringement**: tool developer liability for user infringement (US Grokster standard)
 - **EU DSA** (Digital Services Act): intermediary liability for tools facilitating infringement
 - **UK Online Safety Act 2023**: developer obligations for tools that could enable copyright infringement
-- **Open source considerations**: does publishing source code (e.g. youtube-dl) create liability?
+- **Open source considerations**: does publishing source code for a video download tool create liability?
 
 ### Privacy & Data Protection (incidental)
 - **GDPR / UK GDPR**: does client-side fetching of a third-party page involve personal data?
@@ -79,7 +79,7 @@ Run at least 8–12 targeted searches. Cover each angle separately:
 ```
 "stream ripping legal status US UK EU 2024 2025"
 "downloading video from website copyright infringement DMCA"
-"youtube-dl DMCA takedown legal analysis"
+"stream ripping tool DMCA takedown legal analysis"
 "personal copying exception video UK CDPA"
 "EU InfoSoc Directive private copying video streams"
 "is it legal to download videos from public websites"
@@ -89,7 +89,7 @@ Run at least 8–12 targeted searches. Cover each angle separately:
 ```
 "scraping video URLs terms of service CFAA violation"
 "hiQ LinkedIn scraping ruling implications 2023 2024"
-"browser tool download video YouTube ToS legal"
+"browser tool download video platform ToS legal"
 ```
 
 **Anti-circumvention:**
@@ -104,7 +104,7 @@ Run at least 8–12 targeted searches. Cover each angle separately:
 "developer liability video download tool contributory infringement"
 "open source video downloader liability DMCA safe harbour"
 "GitHub Pages video download tool legal risk"
-"youtube-dl reinstatement GitHub DMCA 2020"
+"stream ripping tool reinstatement GitHub DMCA 2020"
 ```
 
 **Enforcement:**

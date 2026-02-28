@@ -5,7 +5,7 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => 
 
 // ── Network sniffing ─────────────────────────────────────────────────────────
 // Cache stream URLs intercepted from network requests, keyed by tabId.
-// X/Twitter and many other players never put the real URL in the DOM —
+// Many video players never put the real stream URL in the DOM —
 // they fetch it via API and pipe it into a blob. Intercepting the request
 // gives us the real URL before it becomes a blob.
 

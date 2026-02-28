@@ -50,7 +50,7 @@ However, the extension architecture makes several aspects of that analysis more 
 
 **The Grokster inducement risk is unchanged, not elevated.** *Grokster* liability requires "clear expression or other affirmative steps taken to foster infringement." The form of distribution (extension vs. website) is irrelevant to this element. What matters is the content of the README, documentation, and UI. The same cautions from the original research apply without change.
 
-**UK and EU software distribution law.** Under UK CDPA ss.16–27, secondary liability for authorising infringement applies equally to software distributed as a product. In Germany, the Hamburg Appeal Court's November 2024 confirmation of the youtube-dl injunction concerned software (the youtube-dl repository), not a website — so the precedent already accounts for the software distribution model and is directly applicable.
+**UK and EU software distribution law.** Under UK CDPA ss.16–27, secondary liability for authorising infringement applies equally to software distributed as a product. In Germany, the Hamburg Appeal Court's November 2024 confirmation of the injunction against a stream-ripping tool concerned software (the software repository), not a website — so the precedent already accounts for the software distribution model and is directly applicable.
 
 **Assessment:** The Betamax/Grokster secondary liability risk is **structurally similar** between the two architectures, but the persistent installation footprint marginally **increases the developer's exposure to a "knowledge" argument** under contributory infringement doctrine.
 
@@ -130,7 +130,7 @@ The Information Commissioner's Office (ICO) applies UK GDPR principles to softwa
 
 **Does injecting scripts into third-party pages create legal exposure beyond scraping?**
 
-The extension injects content scripts into any active tab via `<all_urls>`. This means JavaScript code written by the developer executes in the context of third-party websites — including YouTube, Vimeo, Netflix, and any other site the user visits while the extension is active.
+The extension injects content scripts into any active tab via `<all_urls>`. This means JavaScript code written by the developer executes in the context of third-party websites — including any site the user visits while the extension is active.
 
 #### Computer Fraud and Abuse Act (CFAA) — US
 
@@ -150,7 +150,7 @@ Article 3 of the Computer Crime Directive prohibits illegal access to informatio
 
 #### Website Terms of Service and Tortious Interference
 
-Content script injection that alters the presentation or behaviour of a third-party website (e.g., adding a download button overlay) could be characterised as interference with that website's content or business. While there is no specific US tort of "browser manipulation," several platforms have sought to invoke their ToS to prohibit extension-based modifications. YouTube's ToS §§ 5.B and 5.C prohibit "access" to YouTube content "by means other than through the YouTube playback functionality as authorised by YouTube" — a content script that intercepts network requests and presents a download UI within YouTube's interface could be argued to fall within this prohibition. However, ToS-based claims against extension developers (as opposed to the users themselves) require establishing that the developer is bound by the ToS, which is contested.
+Content script injection that alters the presentation or behaviour of a third-party website (e.g., adding a download button overlay) could be characterised as interference with that website's content or business. While there is no specific US tort of "browser manipulation," several platforms have sought to invoke their ToS to prohibit extension-based modifications. Major streaming platforms' ToS typically prohibit "access" to content "by means other than through the authorised playback functionality" — a content script that intercepts network requests and presents a download UI within such an interface could be argued to fall within this prohibition. However, ToS-based claims against extension developers (as opposed to the users themselves) require establishing that the developer is bound by the ToS, which is contested.
 
 **Assessment:** Content script injection introduces **moderate new legal exposure** primarily from a ToS and CFAA "exceeds authorised access" standpoint that does not arise with the website model. The risk is mitigated by the fact that the user consents to the extension and no third-party server is accessed. This risk is **higher than in the website model** where no code was injected into third-party pages.
 
@@ -220,7 +220,7 @@ There is no established precedent that the multi-segment reassembly process crea
 
 The original research noted that GitHub (as the hosting platform) benefits from §512 safe harbour for hosting the dl-video repository. The developer, as the author of the tool, is not a §512 service provider and does not personally benefit from §512. This is unchanged.
 
-However, the **distribution model** changes the DMCA §512 analysis in one important respect. The website model meant that users accessed dl-video as a live service — the GitHub Pages server was the point of delivery. Rights holders seeking to take down the tool would file a §512 notice against GitHub Pages, and GitHub (as a service provider) would be the target. Reinstatement via counter-notice (as youtube-dl achieved in 2020) is a well-established mechanism in this context.
+However, the **distribution model** changes the DMCA §512 analysis in one important respect. The website model meant that users accessed dl-video as a live service — the GitHub Pages server was the point of delivery. Rights holders seeking to take down the tool would file a §512 notice against GitHub Pages, and GitHub (as a service provider) would be the target. Reinstatement via counter-notice is a well-established mechanism in this context.
 
 For a zip-file distributed extension, there are two distinct targets for a DMCA notice:
 1. The **GitHub repository** hosting the source code and zip releases (§512 applies to GitHub; same mechanism as before).
@@ -230,7 +230,7 @@ This creates a scenario where a successful §512 takedown of the GitHub reposito
 
 #### Injunctive Relief Against the Developer Personally
 
-The Hamburg Appeal Court (November 2024) confirmed an injunction against the **individual hosting** youtube-dl on GitHub, requiring cessation of hosting. This precedent suggests that where a developer distributes software through GitHub, they are personally liable under applicable national law for the consequences of that distribution, regardless of §512 safe harbour protections (which are a US-law defence unavailable in German courts).
+The Hamburg Appeal Court (November 2024) confirmed an injunction against the **individual hosting** a stream-ripping tool on GitHub, requiring cessation of hosting. This precedent suggests that where a developer distributes software through GitHub, they are personally liable under applicable national law for the consequences of that distribution, regardless of §512 safe harbour protections (which are a US-law defence unavailable in German courts).
 
 An injunction in Germany (or another EU member state) requiring the developer to cease distribution would apply to the GitHub repository. It would not directly "undo" existing user installations, but the developer could face contempt proceedings if they failed to push an update disabling the extension.
 
@@ -238,7 +238,7 @@ An injunction in Germany (or another EU member state) requiring the developer to
 
 When a tool is distributed via the Chrome Web Store, Google acts as an intermediary: rights holders can file takedown complaints with Google, who removes the extension from the Store, which prevents new installations. This mediation layer actually **benefits** the developer in some respects: it provides a structured process, and a §512-equivalent "notice and takedown" mechanism at the distribution point.
 
-For privately distributed unpacked extensions, there is no such mediation layer. Rights holders who want the distribution stopped must go directly to the developer (via GitHub DMCA notice) or the courts. The developer's only fallback is GitHub's own DMCA takedown process (with counter-notice rights, as youtube-dl demonstrated).
+For privately distributed unpacked extensions, there is no such mediation layer. Rights holders who want the distribution stopped must go directly to the developer (via GitHub DMCA notice) or the courts. The developer's only fallback is GitHub's own DMCA takedown process (with counter-notice rights).
 
 **Assessment:** The distribution model shifts the enforcement dynamics: it removes Google as a gatekeeper and structured intermediary, placing more direct pressure on the GitHub repository as the sole distribution point. This is **modestly higher risk** than the website model because: (a) it confirms the developer as the sole responsible party for distribution; (b) successful takedown does not deactivate already-installed instances; and (c) there is no Web Store mediation layer. The §512 counter-notice mechanism via GitHub remains available.
 
@@ -250,7 +250,7 @@ For privately distributed unpacked extensions, there is no such mediation layer.
 
 #### Direct Extension Enforcement
 
-Google has actively removed video downloader extensions from the Chrome Web Store since approximately 2014, specifically targeting extensions that facilitate downloading from YouTube, Instagram, TikTok, and similar platforms. Several major video downloader extensions have had their YouTube/Instagram download capabilities removed or disabled as a condition of remaining in the Web Store. This constitutes platform-level enforcement (not court-ordered), but demonstrates active and ongoing industry pressure on this category of tool.
+Google has actively removed video downloader extensions from the Chrome Web Store since approximately 2014, specifically targeting extensions that facilitate downloading from major streaming and social media platforms. Several major video downloader extensions have had their download capabilities removed or disabled as a condition of remaining in the Web Store. This constitutes platform-level enforcement (not court-ordered), but demonstrates active and ongoing industry pressure on this category of tool.
 
 The Android app *Downloader* (by Elias Saba) provides a cross-platform analogy: it was twice suspended from Google Play after DMCA notices from content owners (Israeli TV companies; later Warner Bros. via MarkScan), even though the app itself did not contain infringing content — it was suspended because it *could* be used to access pirated content. Google ultimately reversed the suspension in both cases, but the episode demonstrates that rights holders are willing to file aggressive DMCA notices against general-purpose download/browser utilities and that distribution platforms (even Google) may comply provisionally before full review.
 
@@ -258,7 +258,7 @@ The Android app *Downloader* (by Elias Saba) provides a cross-platform analogy: 
 
 As of the date of this research, there is no confirmed US federal court judgment holding a browser extension developer liable for contributory or direct copyright infringement based solely on the extension's video download capabilities. Enforcement has predominantly targeted:
 - Web-based stream-ripping services (FLVTO, 2Conv, MP3 Studio) — server-side tools.
-- Software repositories (youtube-dl on GitHub) — DMCA §512 notices.
+- Software repositories (stream-ripping tools on GitHub) — DMCA §512 notices.
 - Hosting providers (Hamburg cases) — under EU/German law.
 
 The absence of a specific browser extension case does not mean the risk is low — it may reflect that most infringing extensions are removed from the Web Store before litigation is necessary, and that private/unpacked distribution has so far been below the enforcement threshold for direct legal action.
@@ -267,7 +267,7 @@ The absence of a specific browser extension case does not mean the risk is low �
 
 No UK High Court injunction under CDPA s.97A has been directed specifically at a browser extension developer as of February 2026. All ISP blocking orders have targeted domain-accessible web services. Similarly, no EU court has issued an injunction specifically against a browser extension developer.
 
-The Hamburg youtube-dl decisions targeted software distributed via a GitHub repository — which is closely analogous to the zip-file distribution model proposed here. Those decisions are the closest applicable precedent and should be treated as the benchmark for EU enforcement risk.
+The Hamburg decisions targeting stream-ripping software distributed via a GitHub repository are closely analogous to the zip-file distribution model proposed here. Those decisions are the closest applicable precedent and should be treated as the benchmark for EU enforcement risk.
 
 ---
 
@@ -295,7 +295,7 @@ The following items supplement (and do not replace) the compliance checklist in 
 **Privacy and Data Protection (Extension-Specific)**
 
 - [ ] Publish a privacy notice specifically addressing the extension's network request monitoring: state explicitly that no network request data is stored, transmitted, or shared with any server operated by the developer.
-- [ ] Evaluate whether `<all_urls>` host permission can be narrowed (e.g., to `*://*.youtube.com/*`, `*://*.vimeo.com/*`, or known video-hosting patterns) without breaking functionality; narrower permissions reduce GDPR/UK GDPR data minimisation exposure.
+- [ ] Evaluate whether `<all_urls>` host permission can be narrowed (e.g., to known video-hosting URL patterns) without breaking functionality; narrower permissions reduce GDPR/UK GDPR data minimisation exposure.
 - [ ] Document the legal basis for any transient personal data processing (recommended: legitimate interests or implied user consent via installation and permission grant).
 - [ ] Add a one-time on-install disclosure (the "one-time user acknowledgement" already contemplated in the architecture) that explicitly informs the user that the extension monitors network requests made by the active tab, for the sole purpose of detecting downloadable video.
 
