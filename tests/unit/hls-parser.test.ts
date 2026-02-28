@@ -92,3 +92,27 @@ test('extracts initUrl from EXT-X-MAP for fMP4 playlists', () => {
   expect(segments).toHaveLength(1);
   expect(segments[0].url).toBe(`${BASE}seg-001.m4s`);
 });
+
+// Cycle 10: EXT-X-MEDIA-SEQUENCE sets starting segment index for AES IV derivation
+test('uses EXT-X-MEDIA-SEQUENCE as starting segment index for AES IV', () => {
+  const content = [
+    '#EXTM3U',
+    '#EXT-X-MEDIA-SEQUENCE:100',
+    '#EXT-X-KEY:METHOD=AES-128,URI="https://cdn.example.com/key.bin"',
+    '#EXTINF:6.000,',
+    'seg-100.ts',
+    '#EXTINF:6.000,',
+    'seg-101.ts',
+    '#EXT-X-ENDLIST',
+  ].join('\n');
+  const { segments } = parseMediaPlaylist(content, BASE);
+  expect(segments).toHaveLength(2);
+  // First segment IV = sequence 100 = 0x64 padded to 16 bytes
+  expect(segments[0].key?.iv).toBeDefined();
+  const iv0 = segments[0].key!.iv!;
+  expect(iv0[15]).toBe(100); // low byte = 100
+  expect(iv0.slice(0, 15).every((b) => b === 0)).toBe(true);
+  // Second segment IV = sequence 101
+  const iv1 = segments[1].key!.iv!;
+  expect(iv1[15]).toBe(101);
+});

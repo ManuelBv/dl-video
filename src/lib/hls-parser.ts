@@ -97,9 +97,13 @@ export function parseMediaPlaylist(content: string, baseUrl: string): MediaPlayl
   const segments: SegmentInfo[] = [];
   let initUrl: string | undefined;
   let currentKey: HlsKeyInfo | undefined;
-  let segmentIndex = 0;
+  let segmentIndex = 0; // updated by #EXT-X-MEDIA-SEQUENCE; used as AES IV when no explicit IV
 
   for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith('#EXT-X-MEDIA-SEQUENCE:')) {
+      const seq = parseInt(lines[i].slice('#EXT-X-MEDIA-SEQUENCE:'.length), 10);
+      if (!isNaN(seq)) segmentIndex = seq;
+    }
     if (lines[i].startsWith('#EXT-X-MAP:')) {
       const m = /URI="([^"]+)"/.exec(lines[i]);
       if (m) initUrl = resolveUrl(m[1], baseUrl);

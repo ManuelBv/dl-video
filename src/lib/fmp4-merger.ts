@@ -95,8 +95,10 @@ function patchTrakId(trak: Uint8Array, newId: number): Uint8Array {
 
 /** Build a minimal trex box for `trackId` (all defaults set to 0 / 1). */
 function makeTrex(trackId: number): Uint8Array {
-  // payload: version(1) + flags(3) + track_id(4) + default_sample_description_index(4=1) + 3×uint32(0)
-  const payload = new Uint8Array(20);
+  // Full box payload per ISO 14496-12 §8.8.3:
+  // version(1) + flags(3) + track_id(4) + default_sample_description_index(4)
+  // + default_sample_duration(4) + default_sample_size(4) + default_sample_flags(4) = 24 bytes
+  const payload = new Uint8Array(24);
   writeU32(payload, 4, trackId);
   writeU32(payload, 8, 1); // default_sample_description_index
   return makeBox('trex', payload);

@@ -70,10 +70,16 @@ async function resolveHls(manifestUrl: string, signal: AbortSignal): Promise<Hls
     let audioSegments: SegmentInfo[] | undefined;
     const audioUrl = best.audioGroupId ? audioStreams[best.audioGroupId] : undefined;
     if (audioUrl) {
-      const audioContent = await fetchText(audioUrl, signal);
-      const { initUrl, segments } = parseMediaPlaylist(audioContent, baseOf(audioUrl));
-      audioInitUrl = initUrl;
-      audioSegments = segments;
+      try {
+        const audioContent = await fetchText(audioUrl, signal);
+        const { initUrl, segments } = parseMediaPlaylist(audioContent, baseOf(audioUrl));
+        audioInitUrl = initUrl;
+        audioSegments = segments;
+      } catch {
+        // Audio playlist unavailable — proceed with video only
+        audioInitUrl = undefined;
+        audioSegments = undefined;
+      }
     }
 
     return { videoInitUrl, videoSegments, audioInitUrl, audioSegments, isFmp4: Boolean(videoInitUrl) };
@@ -128,7 +134,15 @@ export function useDownload() {
               patchAudioSegment(seg, audioTrackIdOriginal, audioTrackIdFinal),
             );
 
-            const data = concatSegments([initSegment, ...videoData, ...patchedAudio]);
+            // Interleave video and audio fragments so players can decode both
+            // tracks in parallel (v0, a0, v1, a1, …) instead of all-video-then-all-audio
+            const interleaved: Uint8Array[] = [initSegment];
+            const maxLen = Math.max(videoData.length, patchedAudio.length);
+            for (let i = 0; i < maxLen; i++) {
+              if (i < videoData.length) interleaved.push(videoData[i]);
+              if (i < patchedAudio.length) interleaved.push(patchedAudio[i]);
+            }
+            const data = concatSegments(interleaved);
             const baseName = video.label.replace(/\.[^.]+$/, '').replace(/[^a-z0-9._-]/gi, '_');
             saveFile(data, `${baseName}.mp4`, 'video/mp4');
           } else {
