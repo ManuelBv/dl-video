@@ -3,6 +3,37 @@ import type { Message, ScanResult } from '../shared/types.ts';
 // Open side panel when extension icon is clicked
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 
+// ── Network sniffing ─────────────────────────────────────────────────────────
+// Cache stream URLs intercepted from network requests, keyed by tabId.
+// X/Twitter and many other players never put the real URL in the DOM —
+// they fetch it via API and pipe it into a blob. Intercepting the request
+// gives us the real URL before it becomes a blob.
+
+const streamCache = new Map<number, Set<string>>();
+
+const STREAM_EXTENSIONS = ['.m3u8', '.mpd'];
+
+chrome.webRequest.onBeforeRequest.addListener(
+  (details) => {
+    const { tabId, url } = details;
+    if (tabId < 0) return;
+    const lower = url.toLowerCase();
+    if (STREAM_EXTENSIONS.some((ext) => lower.includes(ext))) {
+      if (!streamCache.has(tabId)) streamCache.set(tabId, new Set());
+      streamCache.get(tabId)!.add(url);
+    }
+  },
+  { urls: ['<all_urls>'] },
+);
+
+// Clear cache when a tab navigates away
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status === 'loading') streamCache.delete(tabId);
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => streamCache.delete(tabId));
+
+// ── Message handler ──────────────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener(
   (message: Message, _sender, sendResponse) => {
     if (message.type !== 'SCAN_PAGE') return false;
@@ -17,6 +48,9 @@ chrome.runtime.onMessage.addListener(
         return;
       }
 
+      // Grab network-intercepted stream URLs for this tab
+      const networkStreams = Array.from(streamCache.get(tabId) ?? []);
+
       chrome.scripting
         .executeScript({ target: { tabId }, func: scanPageContent })
         .then((results) => {
@@ -26,13 +60,29 @@ chrome.runtime.onMessage.addListener(
             videos: [],
             drmSignals: [],
           };
+
+          // Merge network-intercepted streams (not already found via DOM)
+          const knownUrls = new Set(result.videos.map((v) => v.url));
+          for (const url of networkStreams) {
+            if (knownUrls.has(url)) continue;
+            const label = url.split('/').pop()?.split('?')[0] || url;
+            const format = url.toLowerCase().includes('.m3u8') ? 'hls' : 'dash';
+            result.videos.push({ url, label, format, drmProtected: false });
+          }
+
           sendResponse({ type: 'SCAN_RESULT', result } satisfies Message);
         })
         .catch((err: unknown) => {
           const error = err instanceof Error ? err.message : String(err);
+          // Still return network streams even if DOM scan fails
+          const networkVideos = networkStreams.map((url) => {
+            const label = url.split('/').pop()?.split('?')[0] || url;
+            const format = url.toLowerCase().includes('.m3u8') ? 'hls' as const : 'dash' as const;
+            return { url, label, format, drmProtected: false };
+          });
           sendResponse({
             type: 'SCAN_RESULT',
-            result: { tabId, pageUrl: '', videos: [], drmSignals: [], error },
+            result: { tabId, pageUrl: tab.url ?? '', videos: networkVideos, drmSignals: [], error },
           } satisfies Message);
         });
     });
@@ -41,7 +91,7 @@ chrome.runtime.onMessage.addListener(
   },
 );
 
-// Injected into the page — must be self-contained (no imports)
+// ── DOM scan (injected into page) ────────────────────────────────────────────
 function scanPageContent(): ScanResult {
   const tabId = -1;
   const pageUrl = window.location.href;
@@ -74,55 +124,26 @@ function scanPageContent(): ScanResult {
     for (const m of text.matchAll(STREAM_RE)) add(m[0]);
   }
 
-  // Recursively scan a root (document or shadow root), including nested shadow roots
   function scanRoot(root: Document | ShadowRoot) {
-    const allEls = root.querySelectorAll('*');
-
-    allEls.forEach((el) => {
-      // Recurse into shadow roots
+    root.querySelectorAll('*').forEach((el) => {
       if (el.shadowRoot) scanRoot(el.shadowRoot);
-
-      // Scan all attribute values
       Array.from(el.attributes).forEach((attr) => scanText(attr.value));
-
-      // Scan script/template text content
-      if (el.tagName === 'SCRIPT' || el.tagName === 'TEMPLATE') {
-        scanText(el.textContent ?? '');
-      }
-
-      // video[src]
-      if (el.tagName === 'VIDEO') {
-        const src = el.getAttribute('src') ?? '';
-        const title = (el as HTMLVideoElement).title;
-        if (src) add(src, title || undefined);
-      }
-
-      // source[src] inside video
-      if (el.tagName === 'SOURCE') {
-        const src = el.getAttribute('src') ?? '';
-        if (src) add(src);
-      }
-
-      // og:video
-      if (el.tagName === 'META' && el.getAttribute('property') === 'og:video') {
-        add(el.getAttribute('content') ?? '');
-      }
+      if (el.tagName === 'SCRIPT' || el.tagName === 'TEMPLATE') scanText(el.textContent ?? '');
+      if (el.tagName === 'VIDEO') add(el.getAttribute('src') ?? '', (el as HTMLVideoElement).title || undefined);
+      if (el.tagName === 'SOURCE') add(el.getAttribute('src') ?? '');
+      if (el.tagName === 'META' && el.getAttribute('property') === 'og:video') add(el.getAttribute('content') ?? '');
     });
 
-    // JSON-LD
     root.querySelectorAll('script[type="application/ld+json"]').forEach((el) => {
       try {
         const data = JSON.parse(el.textContent ?? '') as Record<string, unknown>;
-        if (data['@type'] === 'VideoObject' && typeof data.contentUrl === 'string') {
-          add(data.contentUrl);
-        }
+        if (data['@type'] === 'VideoObject' && typeof data.contentUrl === 'string') add(data.contentUrl);
       } catch { /* ignore */ }
     });
   }
 
   scanRoot(document);
 
-  // DRM detection
   const drmKeywords = ['encrypted-media', 'com.widevine.alpha', 'com.microsoft.playready', 'requestMediaKeySystemAccess'];
   document.querySelectorAll('script').forEach((script) => {
     const text = script.textContent ?? '';
