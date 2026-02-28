@@ -15,10 +15,19 @@ export interface QualityOption {
   url: string;
 }
 
+export interface HlsKeyInfo {
+  method: 'AES-128' | 'NONE';
+  uri?: string;
+  /** 16-byte initialisation vector. If absent, use segment sequence index as big-endian uint128. */
+  iv?: Uint8Array;
+}
+
 export interface SegmentInfo {
   url: string;
   duration?: number;
   byteRange?: { start: number; length: number };
+  /** Encryption key info from #EXT-X-KEY. Absent means no encryption. */
+  key?: HlsKeyInfo;
 }
 
 export interface ScanResult {
