@@ -57,7 +57,19 @@ test('returns empty arrays for empty/invalid input', () => {
   expect(parseMasterPlaylist('not a playlist', BASE)).toHaveLength(0);
 });
 
-// Cycle 7: parses EXT-X-MAP init segment URL for fMP4 streams
+// Cycle 7: resolves root-relative segment URLs correctly
+test('resolves root-relative segment URLs against origin', () => {
+  const content = [
+    '#EXTM3U',
+    '#EXTINF:6.000,',
+    '/videos/seg-001.ts',
+    '#EXT-X-ENDLIST',
+  ].join('\n');
+  const { segments } = parseMediaPlaylist(content, 'https://cdn.example.com/pl/720p/index.m3u8');
+  expect(segments[0].url).toBe('https://cdn.example.com/videos/seg-001.ts');
+});
+
+// Cycle 8: parses EXT-X-MAP init segment URL for fMP4 streams
 test('extracts initUrl from EXT-X-MAP for fMP4 playlists', () => {
   const content = [
     '#EXTM3U',

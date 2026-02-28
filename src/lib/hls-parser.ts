@@ -2,6 +2,12 @@ import type { HlsKeyInfo, QualityOption, SegmentInfo } from '../shared/types.ts'
 
 function resolveUrl(url: string, base: string): string {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  // Root-relative path (e.g. /path/to/seg.ts) — combine with origin only
+  if (url.startsWith('/')) {
+    const origin = new URL(base).origin;
+    return origin + url;
+  }
+  // Relative path — join with base directory
   return base.endsWith('/') ? base + url : `${base}/${url}`;
 }
 
