@@ -4,26 +4,26 @@ import type { Message, ScanResult } from '../shared/types.ts';
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 
 // ── Network sniffing ─────────────────────────────────────────────────────────
-// Cache stream URLs intercepted from network requests, keyed by tabId.
-// Many video players never put the real stream URL in the DOM —
-// they fetch it via API and pipe it into a blob. Intercepting the request
-// gives us the real URL before it becomes a blob.
+// Capture ALL stream URLs per tab (up to MAX_STREAM_URLS).
+// When playback starts the player fetches: master playlist → quality variants
+// → audio stream.  We capture all of them so we can identify which URL is
+// the master at scan time (by fetching and checking for #EXT-X-STREAM-INF).
+// Capped to avoid unbounded memory growth on pages with many requests.
 
-// Only the FIRST stream URL captured per tab is kept.
-// When playback starts, the player always fetches the master playlist first,
-// so this gives us the master (which contains all quality variants and audio
-// stream references).  Quality-variant playlists fetched afterwards are ignored.
-const streamCache = new Map<number, string>();
+const MAX_STREAM_URLS = 10;
+const streamCache = new Map<number, Set<string>>();
 
 const STREAM_EXTENSIONS = ['.m3u8', '.mpd'];
 
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
     const { tabId, url } = details;
-    if (tabId < 0 || streamCache.has(tabId)) return;
+    if (tabId < 0) return;
     const lower = url.toLowerCase();
     if (STREAM_EXTENSIONS.some((ext) => lower.includes(ext))) {
-      streamCache.set(tabId, url);
+      if (!streamCache.has(tabId)) streamCache.set(tabId, new Set());
+      const set = streamCache.get(tabId)!;
+      if (set.size < MAX_STREAM_URLS) set.add(url);
     }
   },
   { urls: ['<all_urls>'] },
@@ -36,12 +36,38 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 
 chrome.tabs.onRemoved.addListener((tabId) => streamCache.delete(tabId));
 
+// ── Master playlist detection ─────────────────────────────────────────────────
+// Fetch captured URLs in parallel (up to 5) and return the first one whose
+// content contains #EXT-X-STREAM-INF — that is the master playlist.
+// Falls back to the first captured URL if no master is found or all fetches fail.
+
+async function resolveBestHlsUrl(urls: string[]): Promise<string> {
+  const candidates = urls.filter((u) => u.toLowerCase().includes('.m3u8')).slice(0, 5);
+  if (candidates.length === 0) return urls[0];
+
+  const results = await Promise.all(
+    candidates.map(async (url) => {
+      try {
+        const res = await fetch(url, { credentials: 'include' });
+        if (!res.ok) return null;
+        const text = await res.text();
+        return text.includes('#EXTM3U') && text.includes('#EXT-X-STREAM-INF') ? url : null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return results.find((r) => r !== null) ?? candidates[0];
+}
+
 // ── Message handler ──────────────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener(
   (message: Message, _sender, sendResponse) => {
     if (message.type !== 'SCAN_PAGE') return false;
 
-    chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+    (async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       const tabId = tab?.id;
       if (tabId == null) {
         sendResponse({
@@ -51,44 +77,51 @@ chrome.runtime.onMessage.addListener(
         return;
       }
 
-      // Grab the single master-playlist URL intercepted for this tab (if any)
-      const networkStreams = streamCache.has(tabId) ? [streamCache.get(tabId)!] : [];
+      const capturedUrls = Array.from(streamCache.get(tabId) ?? []);
 
-      chrome.scripting
-        .executeScript({ target: { tabId }, func: scanPageContent })
-        .then((results) => {
-          const result: ScanResult = results[0]?.result ?? {
-            tabId,
-            pageUrl: '',
-            videos: [],
-            drmSignals: [],
-          };
+      // Identify the master playlist (contains quality variant references + audio streams)
+      // so the download logic gets full quality selection and audio track info.
+      let networkStreamUrl: string | null = null;
+      if (capturedUrls.length > 0) {
+        networkStreamUrl = await resolveBestHlsUrl(capturedUrls);
+      }
 
-          // Merge network-intercepted streams (not already found via DOM)
+      try {
+        const injected = await chrome.scripting.executeScript({ target: { tabId }, func: scanPageContent });
+        const result: ScanResult = injected[0]?.result ?? {
+          tabId,
+          pageUrl: '',
+          videos: [],
+          drmSignals: [],
+        };
+
+        // Add network-intercepted master stream if not already found via DOM
+        if (networkStreamUrl) {
           const knownUrls = new Set(result.videos.map((v) => v.url));
-          for (const url of networkStreams) {
-            if (knownUrls.has(url)) continue;
-            const label = url.split('/').pop()?.split('?')[0] || url;
-            const format = url.toLowerCase().includes('.m3u8') ? 'hls' : 'dash';
-            result.videos.push({ url, label, format, drmProtected: false });
+          if (!knownUrls.has(networkStreamUrl)) {
+            const label = networkStreamUrl.split('/').pop()?.split('?')[0] || networkStreamUrl;
+            const format = networkStreamUrl.toLowerCase().includes('.m3u8') ? 'hls' as const : 'dash' as const;
+            result.videos.push({ url: networkStreamUrl, label, format, drmProtected: false });
           }
+        }
 
-          sendResponse({ type: 'SCAN_RESULT', result } satisfies Message);
-        })
-        .catch((err: unknown) => {
-          const error = err instanceof Error ? err.message : String(err);
-          // Still return network streams even if DOM scan fails
-          const networkVideos = networkStreams.map((url) => {
-            const label = url.split('/').pop()?.split('?')[0] || url;
-            const format = url.toLowerCase().includes('.m3u8') ? 'hls' as const : 'dash' as const;
-            return { url, label, format, drmProtected: false };
-          });
-          sendResponse({
-            type: 'SCAN_RESULT',
-            result: { tabId, pageUrl: tab.url ?? '', videos: networkVideos, drmSignals: [], error },
-          } satisfies Message);
-        });
-    });
+        sendResponse({ type: 'SCAN_RESULT', result } satisfies Message);
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err.message : String(err);
+        const networkVideos = networkStreamUrl
+          ? [{
+              url: networkStreamUrl,
+              label: networkStreamUrl.split('/').pop()?.split('?')[0] || networkStreamUrl,
+              format: networkStreamUrl.toLowerCase().includes('.m3u8') ? 'hls' as const : 'dash' as const,
+              drmProtected: false,
+            }]
+          : [];
+        sendResponse({
+          type: 'SCAN_RESULT',
+          result: { tabId, pageUrl: tab.url ?? '', videos: networkVideos, drmSignals: [], error },
+        } satisfies Message);
+      }
+    })();
 
     return true;
   },
