@@ -2,6 +2,8 @@
 
 Chrome extension (Manifest V3) that detects video assets on any web page and lets you download them from a side panel.
 
+**Download & Install:** [https://manuelbv.github.io/dl-video/](https://manuelbv.github.io/dl-video/)
+
 **GitHub:** [https://github.com/ManuelBv/dl-video](https://github.com/ManuelBv/dl-video)
 
 ## Features

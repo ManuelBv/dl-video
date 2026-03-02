@@ -14,21 +14,26 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 2rem;
+      padding: 2rem 1rem;
+      line-height: 1.6;
     }
-    .card {
+    .container {
+      max-width: 720px;
+      width: 100%;
+    }
+
+    /* Hero */
+    .hero {
       background: #fff;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       padding: 2.5rem;
-      max-width: 520px;
-      width: 100%;
       text-align: center;
       box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      margin-bottom: 1.5rem;
     }
     h1 { font-size: 2rem; font-weight: 700; margin-bottom: .5rem; }
-    .tagline { color: #6b7280; margin-bottom: 2rem; }
+    .tagline { color: #6b7280; margin-bottom: 1.5rem; }
     .download-btn {
       display: inline-block;
       background: #2563eb;
@@ -38,48 +43,202 @@
       border-radius: 8px;
       font-size: 1rem;
       font-weight: 600;
-      margin-bottom: 2rem;
       transition: background .15s;
     }
     .download-btn:hover { background: #1d4ed8; }
-    .steps { text-align: left; margin-bottom: 2rem; }
-    .steps h2 { font-size: 1rem; font-weight: 600; margin-bottom: .75rem; color: #374151; }
-    .steps ol { padding-left: 1.25rem; color: #4b5563; line-height: 1.8; }
-    .steps code {
+    .hero-links {
+      margin-top: 1.25rem;
+      font-size: .875rem;
+    }
+    .hero-links a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+    .hero-links a:hover { text-decoration: underline; }
+
+    /* Sections */
+    .section {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 2rem 2.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      margin-bottom: 1.5rem;
+    }
+    .section h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #111;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: .5rem;
+    }
+    .section ol, .section ul {
+      padding-left: 1.5rem;
+      color: #374151;
+    }
+    .section li { margin-bottom: .5rem; }
+    .section p { color: #374151; margin-bottom: .75rem; }
+    .section code {
       background: #f3f4f6;
-      padding: .1em .35em;
+      padding: .1em .4em;
       border-radius: 4px;
       font-size: .875em;
     }
-    .legal { font-size: .75rem; color: #9ca3af; line-height: 1.5; }
-    .legal a { color: #6b7280; }
+
+    /* FAQ */
+    details {
+      border-bottom: 1px solid #f3f4f6;
+      padding: .75rem 0;
+    }
+    details:last-of-type { border-bottom: none; }
+    summary {
+      font-weight: 600;
+      color: #1f2937;
+      cursor: pointer;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::before {
+      content: "+ ";
+      color: #2563eb;
+      font-weight: 700;
+    }
+    details[open] summary::before { content: "- "; }
+    details p {
+      margin-top: .5rem;
+      color: #4b5563;
+      font-size: .925rem;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      color: #9ca3af;
+      font-size: .8rem;
+      padding: 1rem 0 2rem;
+    }
+    .footer a { color: #6b7280; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>dl-video</h1>
-    <p class="tagline">Detect and download video assets from any web page.</p>
+  <div class="container">
 
-    <a class="download-btn" id="dl-link" href="dl-video-extension.zip" download>
-      ⬇ Download Extension (.zip)
-    </a>
+    <!-- Hero -->
+    <div class="hero">
+      <h1>dl-video</h1>
+      <p class="tagline">Detect and download video assets from any web page.</p>
+      <a class="download-btn" href="dl-video-extension.zip" download>Download Extension (.zip)</a>
+      <div class="hero-links">
+        <a href="https://github.com/ManuelBv/dl-video">View source on GitHub</a>
+      </div>
+    </div>
 
-    <div class="steps">
-      <h2>How to install</h2>
+    <!-- Installation -->
+    <div class="section" id="install">
+      <h2>Installation</h2>
       <ol>
-        <li>Download the <strong>.zip</strong> file above and unzip it.</li>
-        <li>Open Chrome and go to <code>chrome://extensions</code>.</li>
-        <li>Enable <strong>Developer mode</strong> (top-right toggle).</li>
-        <li>Click <strong>Load unpacked</strong> and select the unzipped <code>dist/</code> folder.</li>
+        <li>Click the <strong>Download Extension</strong> button above to get the <code>.zip</code> file.</li>
+        <li>Unzip the downloaded file. You should see a <code>dist/</code> folder inside.</li>
+        <li>Open Chrome and navigate to <code>chrome://extensions</code>.</li>
+        <li>Enable <strong>Developer mode</strong> using the toggle in the top-right corner.</li>
+        <li>Click <strong>Load unpacked</strong> and select the <code>dist/</code> folder you just unzipped.</li>
         <li>The dl-video icon will appear in your toolbar. Click it to open the side panel.</li>
+      </ol>
+      <p style="margin-top:1rem; font-size:.875rem; color:#6b7280;">
+        <strong>Note:</strong> This extension is not published on the Chrome Web Store.
+        You must install it manually as an unpacked extension using the steps above.
+      </p>
+    </div>
+
+    <!-- Usage -->
+    <div class="section" id="usage">
+      <h2>Usage</h2>
+      <ol>
+        <li>Navigate to any page with video content.</li>
+        <li>Click the dl-video icon to open the side panel.</li>
+        <li>Click <strong>Scan</strong> to detect videos on the page. If the page uses streaming (HLS/DASH), play the video first so the extension can capture the stream URL, then scan.</li>
+        <li>Check the <strong>rights confirmation</strong> checkbox.</li>
+        <li>Click <strong>Download</strong> on the video you want to save.</li>
       </ol>
     </div>
 
-    <p class="legal">
-      For lawful personal use only. You are solely responsible for ensuring
-      your downloads comply with applicable copyright law and platform terms of service.<br><br>
-      <a href="https://github.com/ManuelBv/dl-video">View source on GitHub</a>
-    </p>
+    <!-- Troubleshooting -->
+    <div class="section" id="troubleshoot">
+      <h2>Troubleshooting</h2>
+      <details>
+        <summary>No videos found after scanning</summary>
+        <p>Some sites load video dynamically. Try playing the video first, wait a few seconds for the stream URL to be captured, then click Scan again. Also make sure you are on the page containing the video (not an iframe or popup).</p>
+      </details>
+      <details>
+        <summary>The side panel does not open</summary>
+        <p>Make sure Developer mode is enabled at <code>chrome://extensions</code> and the extension is loaded and active (no error badges). Try removing and re-loading the unpacked extension.</p>
+      </details>
+      <details>
+        <summary>Download fails or produces a broken file</summary>
+        <p>This can happen if the site uses DRM protection (Widevine/PlayReady). dl-video cannot and will not bypass DRM &mdash; these videos will show a DRM badge with downloads disabled. For non-DRM content, try refreshing the page and scanning again.</p>
+      </details>
+      <details>
+        <summary>Extension says "DRM protected"</summary>
+        <p>The extension detects when a video uses Encrypted Media Extensions (EME). Downloading DRM-protected content is disabled by design to comply with anti-circumvention laws (DMCA &sect;1201, EU Art. 6, CDPA s.296ZA).</p>
+      </details>
+      <details>
+        <summary>Audio is missing from the downloaded video</summary>
+        <p>Some HLS/DASH streams serve audio and video as separate tracks. dl-video attempts to merge them automatically. If audio is missing, the stream may use an unsupported audio codec. Try playing the video first before scanning so the extension captures the full manifest.</p>
+      </details>
+      <details>
+        <summary>The extension stopped working after a Chrome update</summary>
+        <p>Go to <code>chrome://extensions</code>, find dl-video, and click the reload button. If the issue persists, download the latest version from this page and re-install.</p>
+      </details>
+    </div>
+
+    <!-- Legal FAQ -->
+    <div class="section" id="legal">
+      <h2>Legal FAQ</h2>
+      <details>
+        <summary>Is it legal to use this extension?</summary>
+        <p>The extension itself is a tool, much like a web browser or screen recorder. Its legality depends on <strong>how you use it</strong>. Downloading content you own, have created, or have explicit permission to download is generally lawful. Downloading copyrighted content without authorization may violate copyright law in your jurisdiction.</p>
+      </details>
+      <details>
+        <summary>Does this extension bypass DRM?</summary>
+        <p>No. dl-video does not circumvent any Digital Rights Management (DRM) technology. Videos protected by Widevine, PlayReady, or FairPlay are detected and marked with a DRM badge &mdash; downloads are disabled for those entries. This is by design, to stay outside the scope of anti-circumvention laws such as DMCA &sect;1201 (US), CDPA s.296ZA (UK), and InfoSoc Directive Art. 6 (EU).</p>
+      </details>
+      <details>
+        <summary>Can I download videos from YouTube, Netflix, or other streaming platforms?</summary>
+        <p>Most major streaming platforms prohibit downloading via their Terms of Service. Even where the video is not DRM-protected, downloading may constitute a breach of contract. You are solely responsible for reviewing and complying with each platform's terms before using this tool.</p>
+      </details>
+      <details>
+        <summary>What about "fair use" or "private copying"?</summary>
+        <p>Fair use (US) is a case-by-case legal defense, not an automatic right. Most EU countries allow limited private copying under certain conditions with fair compensation to rights holders. The UK currently has <strong>no private copying exception</strong> (the 2014 exception was quashed by the High Court in 2015). This extension cannot determine whether your use qualifies &mdash; consult a legal professional if in doubt.</p>
+      </details>
+      <details>
+        <summary>Who is liable if I download copyrighted content?</summary>
+        <p>You are. This extension is a general-purpose tool. The end user bears full responsibility for ensuring that their use complies with applicable copyright law, platform terms of service, and any other relevant regulations in their jurisdiction.</p>
+      </details>
+      <details>
+        <summary>Does the extension collect or transmit any data?</summary>
+        <p>No. dl-video is fully client-side. It does not collect, store, or transmit any user data, browsing history, or download activity. All processing happens locally in your browser. There is no backend server.</p>
+      </details>
+      <details>
+        <summary>Where can I read the full legal analysis?</summary>
+        <p>Detailed legal research covering US, UK, and EU law is available in the GitHub repository under
+          <a href="https://github.com/ManuelBv/dl-video/blob/main/docs/legal-research-output.md">docs/legal-research-output.md</a> and
+          <a href="https://github.com/ManuelBv/dl-video/blob/main/docs/legal-research-extension-addendum.md">docs/legal-research-extension-addendum.md</a>.
+        </p>
+      </details>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>
+        For lawful personal use only. You are solely responsible for ensuring
+        your downloads comply with applicable copyright law and platform terms of service.
+      </p>
+      <p style="margin-top:.5rem;">
+        <a href="https://github.com/ManuelBv/dl-video">GitHub</a>
+      </p>
+    </div>
+
   </div>
 </body>
 </html>
